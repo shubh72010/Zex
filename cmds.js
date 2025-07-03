@@ -274,8 +274,3 @@ module.exports = async (interaction) => {
 
 client.login(process.env.TOKEN);
 
-// FAKE HTTP SERVER TO KEEP RENDER FROM COMPLAINING
-const express = require('express');
-const app = express();
-app.get('/', (_, res) => res.send('Zex Bot is running!'));
-app.listen(3000, () => console.log('🌐 Fake server listening on port 3000'));
