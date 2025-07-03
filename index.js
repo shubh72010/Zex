@@ -1,18 +1,3 @@
-const { Client, GatewayIntentBits, PermissionsBitField, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-require('dotenv').config();
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences,
-    GatewayIntentBits.DirectMessages,
-  ]
-});
-
-// In-memory stores (replace with DB for production)
 const userXP = new Map();
 const userBalance = new Map();
 const userDaily = new Map();
@@ -23,28 +8,162 @@ const mutedUsers = new Set();
 // Define slash commands
 const commands = [
   // User info
-  new SlashCommandBuilder().setName('('User to view').setRequired(false)),
-  new SlashCommandBuilder().setName('avatar').setDescription('Sends user\'s profile picture.').addUserOption(o=>o.setName('user').setDescription('User to show').setRequired(false)),
-  new SlashCommandBuilder().setName('nickname').setDescription('Changes a user’s nickname.').addUserOption(o=>o.setName('user').setDescription('User').setRequired(true)).addStringOption(o=>o.setName('nickname').setDescription('New nickname').setRequired(true)),
-  new SlashCommandBuilder().setName('dm').setDescription('Sends a DM to a user.').addUserOption(o=>o.setName('user').setDescription('User to DM').setRequired(true)).addStringOption(o=>o.setName('message').setDescription('Message').setRequired(true)),
-  new SlashCommandBuilder().setName('afk').setDescription('Sets your AFK status.').addStringOption(o=>o.setName('reason').setDescription('Reason').setRequired(false)),
-  new SlashCommandBuilder().setName('ping').setDescription('Shows bot\'s response time.'),
-  new SlashCommandBuilder().setName('status').setDescription('Shows if the bot is online and working.'),
-  new SlashCommandBuilder().setName('level').setDescription('Displays user\'s XP level.').addUserOption(o=>o.setName('user').setDescription('User').setRequired(false)),
-  new SlashCommandBuilder().setName('balance').setDescription('Shows user\'s currency balance.').addUserOption(o=>o.setName('user').setDescription('User').setRequired(false)),
-  new SlashCommandBuilder().setName('daily').setDescription('Get your daily currency reward!'),
+  new SlashCommandBuilder()
+    .setName('userinfo')
+    .setDescription('Shows info about a user.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User to view')
+        .setRequired(false)
+    ),
+  new SlashCommandBuilder()
+    .setName('avatar')
+    .setends user\'s profile picture.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User to show')
+        .setRequired(false)
+    ),
+  new SlashCommandBuilder()
+    .setName('nickname')
+    .setDescription('Changes a user’s nickname.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('nickname')
+        .setDescription('New nickname')
+        .setRequired(true)
+    ),
+  new SlashCommandBuilder()
+    .setName('dm')
+    .setDescription('Sends a DM to a user.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User to DM')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('message')
+        .setDescription('Message')
+        .setRequired(true)
+    ),
+  new SlashCommandBuilder()
+    .setName('afk')
+    .setDescription('Sets your AFK status.')
+    .addStringOption(option =>
+      option.setName('reason')
+        .setDescription('Reason')
+        .setRequired(false)
+    ),
+  new SlashCommandBuilder()
+    .setName('ping')
+    .setDescription('Shows bot\'s response time.'),
+  new SlashCommandBuilder()
+    .setName('status')
+    .setDescription('Shows if the bot is online and working.'),
+  new SlashCommandBuilder()
+    .setName('level')
+    .setDescription('Displays user\'s XP level.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User')
+        .setRequired(false)
+    ),
+  new SlashCommandBuilder()
+    .setName('balance')
+    .setDescription('Shows user\'s currency balance.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User')
+        .setRequired(false)
+    ),
+  new SlashCommandBuilder()
+    .setName('daily')
+    .setDescription('Get your daily currency reward!'),
 
   // Moderation
-  new SlashCommandBuilder().setName('ban').setDescription('Bans a user.').addUserOption(o=>o.setName('user').setDescription('User to ban').setRequired(true)).addStringOption(o=>o.setName('reason').setDescription('Reason').setRequired(false)),
-  new SlashCommandBuilder().setName('kick').setDescription('Kicks a user.').addUserOption(o=>o.setName('user').setDescription('User to kick').setRequired(true)).addStringOption(o=>o.setName('reason').setDescription('Reason').setRequired(false)),
-  new SlashCommandBuilder().setName('clear').setDescription('Deletes messages.').addIntegerOption(o=>o.setName('amount').setDescription('Amount (1-100)').setRequired(true)),
-  new SlashCommandBuilder().setName('mute').setDescription('Mutes a user.').addUserOption(o=>o.setName('user').setDescription('User to mute').setRequired(true)),
-  new SlashCommandBuilder().setName('unmute').setDescription('Unmutes a user.').addUserOption(o=>o.setName('user').setDescription('User to unmute').setRequired(true)),
-  new SlashCommandBuilder().setName('warn').setDescription('Warns a user.').addUserOption(o=>o.setName('user').setDescription('User to warn').setRequired(true)).addStringOption(o=>o.setName('reason').setDescription('Reason').setRequired(true)),
-  new SlashCommandBuilder().setName('warnings').setDescription('Shows warnings for a user.').addUserOption(o=>o.setName('user').setDescription('User').setRequired(false)),
-  new SlashCommandBuilder().setName('lock').setDescription('Locks the channel for everyone.'),
-  new SlashCommandBuilder().setName('unlock').setDescription('Unlocks the channel.'),
-  new SlashCommandBuilder().setName('slowmode').setDescription('Enables slowmode in the channel.').addIntegerOption(o=>o.setName('seconds').setDescription('Seconds per user (0 to disable)').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('ban')
+    .setDescription('Bans a user.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User to ban')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('reason')
+        .setDescription('Reason')
+        .setRequired(false)
+    ),
+  new SlashCommandBuilder()
+    .setName('kick')
+    .setDescription('Kicks a user.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User to kick')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('reason')
+        .setDescription('Reason')
+        .setRequired(false)
+    ),
+  new SlashCommandBuilder()
+    .setName('clear')
+    .setDescription('Deletes messages.')
+    .addIntegerOption(option =>
+      option.setName('amount')
+        .setDescription('Amount (1-100)')
+        .setRequired(true)
+    ),
+  new SlashCommandBuilder()
+    .setName('mute')
+    .setDescription('Mutes a user.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User to mute')
+        .setRequired(true)
+    ),
+  new SlashCommandBuilder()
+    .setName('unmute')
+    .setDescription('Unmutes a user.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User to unmute')
+        .setRequired(true)
+    ),
+  new SlashCommandBuilder()
+    .setName('warn')
+    .setDescription('Warns a user.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User to warn')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('reason')
+        .setDescription('Reason')
+        .setRequired(true)
+    ),
+  new SlashCommandBuilder()
+    .setName('warnings')
+    .setDescription('Shows warnings for a user.')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('User')
+        .setRequired(false)
+    ),
+  new SlashCommandBuilder()
+    .setName('lock')
+    .setDescription(' .setDescription('Enables slowmode in the channel.')
+    .addIntegerOption(option =>
+      option.setName('seconds')
+        .setDescription('Seconds per user (0 to disable)')
+        .setRequired(true)
+    ),
 ].map(cmd => cmd.toJSON());
 
 // Register commands
@@ -69,7 +188,7 @@ client.on('interactionCreate', async interaction => {
   // Userinfo
   if (interaction.commandName === 'userinfo') {
     const user = getUser('user');
-    const member = interaction.guild.members.cache.get(user.id) || await interaction.guild.members.fetch(user.id).catch(() => null);
+ => null);
     const embed = new EmbedBuilder()
       .setTitle(`${user.username}'s Info`)
       .setThumbnail(user.displayAvatarURL())
@@ -205,7 +324,7 @@ client.on('interactionCreate', async interaction => {
   // Unmute
   else if (interaction.commandName === 'unmute') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
-      return interaction.reply({ content: "You don't have permission to unmute.", ephemeral: true });
+      return interaction.reply({.", ephemeral: true });
     const member = interaction.options.getMember('user');
     if (!member) return interaction.reply({ content: "User not found", ephemeral: true });
     await member.timeout(null).catch(() => {});
