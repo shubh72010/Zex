@@ -106,7 +106,7 @@ module.exports = async (interaction) => {
         });
 
       case 'status':
-        return interaction.reply('✅ I'm online and ready!');
+        return interaction.reply("✅ I'm online and ready!");
 
       default:
         return interaction.reply('❌ Command not yet implemented.');
