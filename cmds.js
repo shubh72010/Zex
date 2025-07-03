@@ -6,38 +6,6 @@ const afkUsers = new Map();
 module.exports = async (interaction) => {
   const { commandName, options, guild, member, client, channel, user } = interaction;
 
-{
-  name: 'setlog',
-  description: 'Enable or disable logs by type or bundle',
-  options: [
-    {
-      name: 'type',
-      description: 'Log type or bundle',
-      type: 3,
-      required: true,
-      choices: [
-        { name: 'message_sent', value: 'message_sent' },
-        { name: 'message_delete', value: 'message_delete' },
-        { name: 'message_edit', value: 'message_edit' },
-        { name: 'member_join', value: 'member_join' },
-        { name: 'member_leave', value: 'member_leave' },
-        { name: 'member_update', value: 'member_update' },
-        { name: 'voice_update', value: 'voice_update' },
-        { name: 'messages (bundle)', value: 'messages' },
-        { name: 'members (bundle)', value: 'members' },
-        { name: 'voice (bundle)', value: 'voice' },
-        { name: 'all (bundle)', value: 'all' }
-      ]
-    },
-    {
-      name: 'enabled',
-      description: 'Enable or disable logging',
-      type: 5,
-      required: true
-    }
-  ]
-}
-
   try {
     switch (commandName) {
       case 'ping':
