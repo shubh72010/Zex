@@ -275,4 +275,5 @@ module.exports = async (interaction) => {
 const express = require('express');
 const app = express();
 app.get('/', (_, res) => res.send('Zex Bot is running!'));
-app.listen(3000, () => console.log('🌐 Fake server listening on port 3000'));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🌐 Fake server listening on port ${PORT}`));
