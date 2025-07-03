@@ -12,9 +12,12 @@ module.exports = async (interaction) => {
         return interaction.reply(`🏓 Pong! ${client.ws.ping}ms`);
 
       case 'say': {
-        const text = options.getString('text');
-        return interaction.reply({ content: text });
-      }
+  const text = options.getString('text');
+  await interaction.deferReply({ ephemeral: false });
+  await interaction.deleteReply(); // delete the "Flakious used /say"
+  await interaction.channel.send({ content: text }); // sends clean message
+  break;
+}
 
       case 'userinfo': {
         const user = options.getUser('user') || interaction.user;
