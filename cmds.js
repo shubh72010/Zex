@@ -271,9 +271,6 @@ module.exports = async (interaction) => {
 };
 
 // ... your bot code above
-
-client.login(process.env.TOKEN);
-
 // FAKE HTTP SERVER TO KEEP RENDER FROM COMPLAINING
 const express = require('express');
 const app = express();
