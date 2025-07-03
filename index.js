@@ -29,7 +29,7 @@ const commands = [
       option.setName('amount').setDescription('Number of messages').setRequired(true)),
 ].map(cmd => cmd.toJSON());
 
-// Register slash commands (global)
+// Register slash commands globally
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
   const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -48,6 +48,7 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
+  // /kick
   if (interaction.commandName === 'kick') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.KickMembers))
       return interaction.reply({ content: "You don't have permission to kick members.", ephemeral: true });
@@ -61,6 +62,7 @@ client.on('interactionCreate', async interaction => {
     }
   }
 
+  // /ban
   if (interaction.commandName === 'ban') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.BanMembers))
       return interaction.reply({ content: "You don't have permission to ban members.", ephemeral: true });
@@ -74,6 +76,7 @@ client.on('interactionCreate', async interaction => {
     }
   }
 
+  // /clear
   if (interaction.commandName === 'clear') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages))
       return interaction.reply({ content: "You don't have permission to clear messages.", ephemeral: true });
