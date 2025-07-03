@@ -269,8 +269,3 @@ module.exports = async (interaction) => {
     return interaction.reply({ content: '❌ There was an error executing this command.', ephemeral: true });
   }
 };
-
-// ... your bot code above
-
-client.login(process.env.TOKEN);
-
