@@ -2,7 +2,7 @@ const { PermissionFlagsBits } = require('discord.js'); const warnedUsers = new M
 
 module.exports = async (interaction) => { const { commandName, options, guild, member, client, channel, user } = interaction;
 
-try { switch (commandName) { case 'ping': return interaction.reply(🏓 Pong! ${client.ws.ping}ms);
+try { switch (commandName) { case 'ping': return interaction.reply(`🏓 Pong! ${client.ws.ping}ms`);
 
 case 'say': {
     const text = options.getString('text');
