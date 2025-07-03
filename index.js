@@ -1,3 +1,18 @@
+const { Client, GatewayIntentBits, PermissionsBitField, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+require('dotenv').config();
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.DirectMessages,
+  ]
+});
+
+// In-memory stores (replace with a DB for production)
 const userXP = new Map();
 const userBalance = new Map();
 const userDaily = new Map();
@@ -5,58 +20,42 @@ const userAFK = new Map();
 const userWarnings = new Map();
 const mutedUsers = new Set();
 
-// Define slash commands
 const commands = [
-  // User info
   new SlashCommandBuilder()
     .setName('userinfo')
     .setDescription('Shows info about a user.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User to view')
-        .setRequired(false)
+      option.setName('user').setDescription('User to view').setRequired(false)
     ),
   new SlashCommandBuilder()
     .setName('avatar')
-    .setends user\'s profile picture.')
+    .setDescription('Sends user\'s profile picture.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User to show')
-        .setRequired(false)
+      option.setName('user').setDescription('User to show').setRequired(false)
     ),
   new SlashCommandBuilder()
     .setName('nickname')
     .setDescription('Changes a user’s nickname.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User')
-        .setRequired(true)
+      option.setName('user').setDescription('User').setRequired(true)
     )
     .addStringOption(option =>
-      option.setName('nickname')
-        .setDescription('New nickname')
-        .setRequired(true)
+      option.setName('nickname').setDescription('New nickname').setRequired(true)
     ),
   new SlashCommandBuilder()
     .setName('dm')
     .setDescription('Sends a DM to a user.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User to DM')
-        .setRequired(true)
+      option.setName('user').setDescription('User to DM').setRequired(true)
     )
     .addStringOption(option =>
-      option.setName('message')
-        .setDescription('Message')
-        .setRequired(true)
+      option.setName('message').setDescription('Message').setRequired(true)
     ),
   new SlashCommandBuilder()
     .setName('afk')
     .setDescription('Sets your AFK status.')
     .addStringOption(option =>
-      option.setName('reason')
-        .setDescription('Reason')
-        .setRequired(false)
+      option.setName('reason').setDescription('Reason').setRequired(false)
     ),
   new SlashCommandBuilder()
     .setName('ping')
@@ -68,105 +67,82 @@ const commands = [
     .setName('level')
     .setDescription('Displays user\'s XP level.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User')
-        .setRequired(false)
+      option.setName('user').setDescription('User').setRequired(false)
     ),
   new SlashCommandBuilder()
     .setName('balance')
     .setDescription('Shows user\'s currency balance.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User')
-        .setRequired(false)
+      option.setName('user').setDescription('User').setRequired(false)
     ),
   new SlashCommandBuilder()
     .setName('daily')
     .setDescription('Get your daily currency reward!'),
-
-  // Moderation
   new SlashCommandBuilder()
     .setName('ban')
     .setDescription('Bans a user.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User to ban')
-        .setRequired(true)
+      option.setName('user').setDescription('User to ban').setRequired(true)
     )
     .addStringOption(option =>
-      option.setName('reason')
-        .setDescription('Reason')
-        .setRequired(false)
+      option.setName('reason').setDescription('Reason').setRequired(false)
     ),
   new SlashCommandBuilder()
     .setName('kick')
     .setDescription('Kicks a user.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User to kick')
-        .setRequired(true)
+      option.setName('user').setDescription('User to kick').setRequired(true)
     )
     .addStringOption(option =>
-      option.setName('reason')
-        .setDescription('Reason')
-        .setRequired(false)
+      option.setName('reason').setDescription('Reason').setRequired(false)
     ),
   new SlashCommandBuilder()
     .setName('clear')
     .setDescription('Deletes messages.')
     .addIntegerOption(option =>
-      option.setName('amount')
-        .setDescription('Amount (1-100)')
-        .setRequired(true)
+      option.setName('amount').setDescription('Amount (1-100)').setRequired(true)
     ),
   new SlashCommandBuilder()
     .setName('mute')
     .setDescription('Mutes a user.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User to mute')
-        .setRequired(true)
+      option.setName('user').setDescription('User to mute').setRequired(true)
     ),
   new SlashCommandBuilder()
     .setName('unmute')
     .setDescription('Unmutes a user.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User to unmute')
-        .setRequired(true)
+      option.setName('user').setDescription('User to unmute').setRequired(true)
     ),
   new SlashCommandBuilder()
     .setName('warn')
     .setDescription('Warns a user.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User to warn')
-        .setRequired(true)
+      option.setName('user').setDescription('User to warn').setRequired(true)
     )
     .addStringOption(option =>
-      option.setName('reason')
-        .setDescription('Reason')
-        .setRequired(true)
+      option.setName('reason').setDescription('Reason').setRequired(true)
     ),
   new SlashCommandBuilder()
     .setName('warnings')
     .setDescription('Shows warnings for a user.')
     .addUserOption(option =>
-      option.setName('user')
-        .setDescription('User')
-        .setRequired(false)
+      option.setName('user').setDescription('User').setRequired(false)
     ),
   new SlashCommandBuilder()
     .setName('lock')
-    .setDescription(' .setDescription('Enables slowmode in the channel.')
+    .setDescription('Locks the channel for everyone.'),
+  new SlashCommandBuilder()
+    .setName('unlock')
+    .setDescription('Unlocks the channel.'),
+  new SlashCommandBuilder()
+    .setName('slowmode')
+    .setDescription('Enables slowmode in the channel.')
     .addIntegerOption(option =>
-      option.setName('seconds')
-        .setDescription('Seconds per user (0 to disable)')
-        .setRequired(true)
+      option.setName('seconds').setDescription('Seconds per user (0 to disable)').setRequired(true)
     ),
 ].map(cmd => cmd.toJSON());
 
-// Register commands
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
   const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -181,14 +157,12 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
-  // Helper for option or default to command user
   const getUser = (name) => interaction.options.getUser(name) || interaction.user;
   const getMember = (name) => interaction.options.getMember(name) || interaction.member;
 
-  // Userinfo
   if (interaction.commandName === 'userinfo') {
     const user = getUser('user');
- => null);
+    const member = interaction.guild.members.cache.get(user.id) || await interaction.guild.members.fetch(user.id).catch(() => null);
     const embed = new EmbedBuilder()
       .setTitle(`${user.username}'s Info`)
       .setThumbnail(user.displayAvatarURL())
@@ -196,18 +170,16 @@ client.on('interactionCreate', async interaction => {
         { name: "ID", value: user.id, inline: true },
         { name: "Tag", value: user.tag, inline: true },
         { name: "Joined", value: member?.joinedAt?.toLocaleString() || "Unknown", inline: true },
-        { name: "Roles", value: member?.roles.cache.map(r=>r.name).join(", ") || "None", inline: false }
+        { name: "Roles", value: member?.roles.cache.map(r => r.name).join(", ") || "None", inline: false }
       );
     interaction.reply({ embeds: [embed] });
   }
 
-  // Avatar
   else if (interaction.commandName === 'avatar') {
     const user = getUser('user');
     interaction.reply({ content: user.displayAvatarURL({ size: 4096 }) });
   }
 
-  // Nickname
   else if (interaction.commandName === 'nickname') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageNicknames))
       return interaction.reply({ content: "Missing permission: Manage Nicknames", ephemeral: true });
@@ -215,10 +187,9 @@ client.on('interactionCreate', async interaction => {
     const nick = interaction.options.getString('nickname');
     if (!member) return interaction.reply({ content: "User not found", ephemeral: true });
     await member.setNickname(nick).catch(() => {});
-    interaction.reply({ content: `Changed nickname for ${member.user.tag} to ${nick}` });
+    interaction.reply({ content: `Changed nickname for ${member.user });
   }
 
-  // DM
   else if (interaction.commandName === 'dm') {
     const user = interaction.options.getUser('user');
     const msg = interaction.options.getString('message');
@@ -229,14 +200,12 @@ client.on('interactionCreate', async interaction => {
     });
   }
 
-  // AFK
   else if (interaction.commandName === 'afk') {
     const reason = interaction.options.getString('reason') || 'AFK';
     userAFK.set(interaction.user.id, reason);
     interaction.reply({ content: `You are now AFK: ${reason}` });
   }
 
-  // Ping
   else if (interaction.commandName === 'ping') {
     const sent = Date.now();
     interaction.reply({ content: 'Pinging...' }).then(() => {
@@ -244,12 +213,10 @@ client.on('interactionCreate', async interaction => {
     });
   }
 
-  // Status
   else if (interaction.commandName === 'status') {
     interaction.reply({ content: 'Bot is online and working!' });
   }
 
-  // Level (XP)
   else if (interaction.commandName === 'level') {
     const user = getUser('user');
     const xp = userXP.get(user.id) || 0;
@@ -257,18 +224,16 @@ client.on('interactionCreate', async interaction => {
     interaction.reply({ content: `${user.username}'s XP: ${xp} | Level: ${level}` });
   }
 
-  // Balance (Economy)
   else if (interaction.commandName === 'balance') {
     const user = getUser('user');
     const bal = userBalance.get(user.id) || 0;
     interaction.reply({ content: `${user.username} has $${bal}` });
   }
 
-  // Daily
   else if (interaction.commandName === 'daily') {
     const uid = interaction.user.id;
     const last = userDaily.get(uid) || 0;
-    if (Date.now() - last < 24*60*60*1000) {
+    if (Date.now() - last < 24 * 60 * 60 * 1000) {
       return interaction.reply({ content: 'You already claimed your daily reward! Try again later.', ephemeral: true });
     }
     const amount = 500;
@@ -277,7 +242,6 @@ client.on('interactionCreate', async interaction => {
     interaction.reply({ content: `You got $${amount} as a daily reward!` });
   }
 
-  // Ban
   else if (interaction.commandName === 'ban') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.BanMembers))
       return interaction.reply({ content: "You don't have permission to ban.", ephemeral: true });
@@ -288,7 +252,6 @@ client.on('interactionCreate', async interaction => {
     interaction.reply({ content: `Banned ${member.user.tag}. Reason: ${reason}` });
   }
 
-  // Kick
   else if (interaction.commandName === 'kick') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.KickMembers))
       return interaction.reply({ content: "You don't have permission to kick.", ephemeral: true });
@@ -299,32 +262,27 @@ client.on('interactionCreate', async interaction => {
     interaction.reply({ content: `Kicked ${member.user.tag}. Reason: ${reason}` });
   }
 
-  // Clear
   else if (interaction.commandName === 'clear') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages))
       return interaction.reply({ content: "You don't have permission to clear messages.", ephemeral: true });
     const amount = interaction.options.getInteger('amount');
     if (amount < 1 || amount > 100)
-      return interaction.reply({ content: 'Enter a number between 1 and 100.', ephemeral: true });
-    await interaction.channel.bulkDelete(amount, true);
-    interaction.reply({ content: `Deleted ${amount} messages.`, ephemeral: true });
+      return interaction.reply({ content: 'Enter a number between .reply({ content: `Deleted ${amount} messages.`, ephemeral: true });
   }
 
-  // Mute
   else if (interaction.commandName === 'mute') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
       return interaction.reply({ content: "You don't have permission to mute.", ephemeral: true });
     const member = interaction.options.getMember('user');
     if (!member) return interaction.reply({ content: "User not found", ephemeral: true });
-    await member.timeout(24*60*60*1000).catch(() => {});
+    await member.timeout(24 * 60 * 60 * 1000).catch(() => {});
     mutedUsers.add(member.id);
     interaction.reply({ content: `${member.user.tag} has been muted (timeout for 24h).` });
   }
 
-  // Unmute
   else if (interaction.commandName === 'unmute') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
-      return interaction.reply({.", ephemeral: true });
+      return interaction.reply({ content: "You don't have permission to unmute.", ephemeral: true });
     const member = interaction.options.getMember('user');
     if (!member) return interaction.reply({ content: "User not found", ephemeral: true });
     await member.timeout(null).catch(() => {});
@@ -332,7 +290,6 @@ client.on('interactionCreate', async interaction => {
     interaction.reply({ content: `${member.user.tag} has been unmuted.` });
   }
 
-  // Warn
   else if (interaction.commandName === 'warn') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.KickMembers))
       return interaction.reply({ content: "You don't have permission to warn.", ephemeral: true });
@@ -344,16 +301,14 @@ client.on('interactionCreate', async interaction => {
     interaction.reply({ content: `${user.tag} has been warned. Reason: ${reason}` });
   }
 
-  // Warnings
   else if (interaction.commandName === 'warnings') {
     const user = getUser('user');
     const warnings = userWarnings.get(user.id) || [];
     if (!warnings.length) return interaction.reply({ content: `${user.tag} has no warnings.` });
-    let text = warnings.map((w, i) => `${i+1}. By: ${w.by}\nReason: ${w.reason}\nDate: ${w.date}`).join('\n\n');
+    let text = warnings.map((w, i) => `${i + 1}. By: ${w.by}\nReason: ${w.reason}\nDate: ${w.date}`).join('\n\n');
     interaction.reply({ content: `Warnings for ${user.tag}:\n${text}` });
   }
 
-  // Lock
   else if (interaction.commandName === 'lock') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels))
       return interaction.reply({ content: "You don't have permission to lock.", ephemeral: true });
@@ -361,7 +316,6 @@ client.on('interactionCreate', async interaction => {
     interaction.reply({ content: "Channel locked." });
   }
 
-  // Unlock
   else if (interaction.commandName === 'unlock') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels))
       return interaction.reply({ content: "You don't have permission to unlock.", ephemeral: true });
@@ -369,7 +323,6 @@ client.on('interactionCreate', async interaction => {
     interaction.reply({ content: "Channel unlocked." });
   }
 
-  // Slowmode
   else if (interaction.commandName === 'slowmode') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels))
       return interaction.reply({ content: "You don't have permission to set slowmode.", ephemeral: true });
@@ -379,7 +332,6 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// Example XP gain on message
 client.on('messageCreate', msg => {
   if (msg.author.bot) return;
   // Remove AFK on message
