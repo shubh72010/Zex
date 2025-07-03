@@ -12,7 +12,7 @@ const client = new Client({
   ]
 });
 
-// In-memory stores (replace with a DB for production)
+// In-memory stores (use a real database for production)
 const userXP = new Map();
 const userBalance = new Map();
 const userDaily = new Map();
@@ -117,11 +117,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName('warn')
     .setDescription('Warns a user.')
-    .addUserOption(option =>
-      option.setName('user').setDescription('User to warn').setRequired(true)
-    )
-    .addStringOption(option =>
-      option.setName('reason').setDescription('Reason').setRequired(true)
+   .setName('reason').setDescription('Reason').setRequired(true)
     ),
   new SlashCommandBuilder()
     .setName('warnings')
@@ -187,15 +183,14 @@ client.on('interactionCreate', async interaction => {
     const nick = interaction.options.getString('nickname');
     if (!member) return interaction.reply({ content: "User not found", ephemeral: true });
     await member.setNickname(nick).catch(() => {});
-    interaction.reply({ content: `Changed nickname for ${member.user });
+    interaction.reply({ content: `Changed nickname for ${member.user.tag} to ${nick}` });
   }
 
   else if (interaction.commandName === 'dm') {
     const user = interaction.options.getUser('user');
     const msg = interaction.options.getString('message');
     user.send(msg).then(() => {
-      interaction.reply({ content: `DM sent to ${user.tag}`, ephemeral: true });
-    }).catch(() => {
+      interaction.replycatch(() => {
       interaction.reply({ content: `Could not DM ${user.tag}`, ephemeral: true });
     });
   }
@@ -267,15 +262,16 @@ client.on('interactionCreate', async interaction => {
       return interaction.reply({ content: "You don't have permission to clear messages.", ephemeral: true });
     const amount = interaction.options.getInteger('amount');
     if (amount < 1 || amount > 100)
-      return interaction.reply({ content: 'Enter a number between .reply({ content: `Deleted ${amount} messages.`, ephemeral: true });
+      return interaction.reply({ content: 'Enter a number between 1 and 100.', ephemeral: true });
+    await interaction.channel.bulkDelete(amount, true);
+    interaction.reply({ content: `Deleted ${amount} messages.`, ephemeral: true });
   }
 
   else if (interaction.commandName === 'mute') {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
       return interaction.reply({ content: "You don't have permission to mute.", ephemeral: true });
     const member = interaction.options.getMember('user');
-    if (!member) return interaction.reply({ content: "User not found", ephemeral: true });
-    await member.timeout(24 * 60 * 60 * 1000).catch(() => {});
+    if (!member) return interaction.reply({ content: " member.timeout(24 * 60 * 60 * 1000).catch(() => {});
     mutedUsers.add(member.id);
     interaction.reply({ content: `${member.user.tag} has been muted (timeout for 24h).` });
   }
