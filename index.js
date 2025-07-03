@@ -1,4 +1,5 @@
-// index.js – FULL ZEX BOT SETUP + ALL COMMANDS const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, Events, PermissionFlagsBits } = require('discord.js'); require('dotenv').config();
+
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, Events, PermissionFlagsBits } = require('discord.js'); require('dotenv').config();
 
 const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, ] });
 
