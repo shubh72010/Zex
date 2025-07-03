@@ -1,4 +1,5 @@
 const { PermissionFlagsBits } = require('discord.js');
+const logger = require('./logger');
 const warnedUsers = new Map();
 const snipedMessages = new Map();
 const afkUsers = new Map();
@@ -8,16 +9,28 @@ module.exports = async (interaction) => {
 
   try {
     switch (commandName) {
+
       case 'ping':
         return interaction.reply(`🏓 Pong! ${client.ws.ping}ms`);
 
       case 'say': {
-  const text = options.getString('text');
-  await interaction.deferReply({ ephemeral: false });
-  await interaction.deleteReply(); // delete the "Flakious used /say"
-  await interaction.channel.send({ content: text }); // sends clean message
-  break;
-}
+        const text = options.getString('text');
+        await interaction.deferReply({ ephemeral: false });
+        await interaction.deleteReply();
+        await interaction.channel.send({ content: text });
+
+        if (logger.isLogEnabled(guild.id, 'message_sent')) {
+          logger.logToFile(`${user.tag} used /say → ${text}`, 'MESSAGE_SENT');
+        }
+        break;
+      }
+
+      case 'setlog': {
+        const type = options.getString('type');
+        const enabled = options.getBoolean('enabled');
+        logger.setLogType(guild.id, type, enabled);
+        return interaction.reply(`🛠 Logging for **${type}** is now **${enabled ? 'enabled' : 'disabled'}**.`);
+      }
 
       case 'userinfo': {
         const user = options.getUser('user') || interaction.user;
@@ -172,6 +185,9 @@ module.exports = async (interaction) => {
         const user = options.getUser('user');
         const member = guild.members.cache.get(user.id);
         await member.ban();
+        if (logger.isLogEnabled(guild.id, 'member_update')) {
+          logger.logToFile(`${user.tag} was banned.`, 'MEMBER_UPDATE');
+        }
         return interaction.reply(`🔨 Banned ${user.tag}`);
       }
 
@@ -179,12 +195,15 @@ module.exports = async (interaction) => {
         const user = options.getUser('user');
         const member = guild.members.cache.get(user.id);
         await member.kick();
+        if (logger.isLogEnabled(guild.id, 'member_update')) {
+          logger.logToFile(`${user.tag} was kicked.`, 'MEMBER_UPDATE');
+        }
         return interaction.reply(`👢 Kicked ${user.tag}`);
       }
 
       case 'mute': {
         const target = options.getMember('user');
-        await target.timeout(60 * 60 * 1000); // 1 hour mute
+        await target.timeout(60 * 60 * 1000);
         return interaction.reply(`🔇 Muted ${target.user.tag} for 1 hour.`);
       }
 
@@ -267,14 +286,14 @@ module.exports = async (interaction) => {
       default:
         return interaction.reply('❌ Command not yet implemented.');
     }
+
   } catch (err) {
     console.error(`❌ Error in command '${commandName}':`, err);
     return interaction.reply({ content: '❌ There was an error executing this command.', ephemeral: true });
   }
 };
 
-// ... your bot code above
-// FAKE HTTP SERVER TO KEEP RENDER FROM COMPLAINING
+// Fake HTTP server for Render uptime
 const express = require('express');
 const app = express();
 app.get('/', (_, res) => res.send('Zex Bot is running!'));
