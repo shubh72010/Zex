@@ -1,16 +1,20 @@
 const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, Events } = require('discord.js');
 require('dotenv').config();
 
-// Create bot instance
+// Create the Discord client
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ]
 });
 
-// Define slash commands
+// Define commands
 const commands = [
   new SlashCommandBuilder()
     .setName('nickname')
-    .setDescription('Changes a user\'s nickname.')
+    .setDescription('Change a user\'s nickname')
     .addUserOption(option =>
       option.setName('user')
             .setDescription('User to rename')
@@ -23,7 +27,7 @@ const commands = [
     )
 ].map(command => command.toJSON());
 
-// Register commands
+// Register slash commands globally
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
@@ -34,41 +38,45 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
       { body: commands }
     );
     console.log('✅ Slash commands registered!');
-  } catch (error) {
-    console.error('❌ Failed to register commands:', error);
+  } catch (err) {
+    console.error('❌ Failed to register commands:', err);
   }
 })();
 
-// When bot is ready
+// Bot ready
 client.once(Events.ClientReady, () => {
   console.log(`🟢 Logged in as ${client.user.tag}`);
 });
 
-// Handle slash commands
+// Slash command interaction handler
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'nickname') {
-    const member = interaction.options.getMember('user');
-    const nickname = interaction.options.getString('nickname');
-
-    if (!interaction.member.permissions.has('ManageNicknames')) {
-      return interaction.reply({ content: '❌ You don’t have permission to change nicknames.', ephemeral: true });
-    }
-
-    if (!member.manageable) {
-      return interaction.reply({ content: '❌ I can’t change this user’s nickname.', ephemeral: true });
-    }
-
     try {
+      const member = interaction.options.getMember('user');
+      const nickname = interaction.options.getString('nickname');
+
+      if (!interaction.member.permissions.has('ManageNicknames')) {
+        await interaction.reply({ content: '❌ You don’t have permission to change nicknames.', ephemeral: true });
+        return;
+      }
+
+      if (!member.manageable) {
+        await interaction.reply({ content: '❌ I can’t change this user’s nickname.', ephemeral: true });
+        return;
+      }
+
       await member.setNickname(nickname);
       await interaction.reply(`✅ Changed nickname of ${member.user.tag} to **${nickname}**`);
     } catch (err) {
-      console.error(err);
-      interaction.reply({ content: '❌ Failed to change nickname.', ephemeral: true });
+      console.error('❌ Error changing nickname:', err);
+      if (!interaction.replied) {
+        await interaction.reply({ content: '❌ Something went wrong while changing nickname.', ephemeral: true });
+      }
     }
   }
 });
 
-// Login bot
+// Login
 client.login(process.env.TOKEN);
