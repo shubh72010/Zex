@@ -1,82 +1,14 @@
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, Events } = require('discord.js');
-require('dotenv').config();
+// index.js – FULL ZEX BOT SETUP + ALL COMMANDS const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, Events, PermissionFlagsBits } = require('discord.js'); require('dotenv').config();
 
-// Create the Discord client
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ]
-});
+const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, ] });
 
-// Define commands
-const commands = [
-  new SlashCommandBuilder()
-    .setName('nickname')
-    .setDescription('Change a user\'s nickname')
-    .addUserOption(option =>
-      option.setName('user')
-            .setDescription('User to rename')
-            .setRequired(true)
-    )
-    .addStringOption(option =>
-      option.setName('nickname')
-            .setDescription('New nickname')
-            .setRequired(true)
-    )
-].map(command => command.toJSON());
+const commands = [ new SlashCommandBuilder().setName('ban').setDescription('Ban a user').addUserOption(o => o.setName('user').setDescription('User').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.BanMembers), new SlashCommandBuilder().setName('kick').setDescription('Kick a user').addUserOption(o => o.setName('user').setDescription('User').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.KickMembers), new SlashCommandBuilder().setName('clear').setDescription('Delete messages').addIntegerOption(o => o.setName('amount').setDescription('Number of messages').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages), new SlashCommandBuilder().setName('say').setDescription('Make bot say something').addStringOption(o => o.setName('text').setDescription('Text').setRequired(true)), new SlashCommandBuilder().setName('mute').setDescription('Mute a user').addUserOption(o => o.setName('user').setDescription('User').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.MuteMembers), new SlashCommandBuilder().setName('unmute').setDescription('Unmute a user').addUserOption(o => o.setName('user').setDescription('User').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.MuteMembers), new SlashCommandBuilder().setName('warn').setDescription('Warn a user').addUserOption(o => o.setName('user').setDescription('User').setRequired(true)).addStringOption(o => o.setName('reason').setDescription('Reason').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages), new SlashCommandBuilder().setName('warnings').setDescription('Check user warnings').addUserOption(o => o.setName('user').setDescription('User').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages), new SlashCommandBuilder().setName('userinfo').setDescription('User info').addUserOption(o => o.setName('user').setDescription('Target user')), new SlashCommandBuilder().setName('serverinfo').setDescription('Server info'), new SlashCommandBuilder().setName('ping').setDescription('Bot latency'), new SlashCommandBuilder().setName('poll').setDescription('Start a yes/no poll').addStringOption(o => o.setName('question').setDescription('Poll?').setRequired(true)), new SlashCommandBuilder().setName('help').setDescription('Help menu'), new SlashCommandBuilder().setName('avatar').setDescription('User avatar').addUserOption(o => o.setName('user').setDescription('User')), new SlashCommandBuilder().setName('slowmode').setDescription('Set slowmode').addIntegerOption(o => o.setName('seconds').setDescription('Seconds').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels), new SlashCommandBuilder().setName('lock').setDescription('Lock current channel').setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels), new SlashCommandBuilder().setName('unlock').setDescription('Unlock current channel').setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels), new SlashCommandBuilder().setName('announce').setDescription('Make announcement').addStringOption(o => o.setName('message').setDescription('Message').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages), new SlashCommandBuilder().setName('nickname').setDescription('Change nickname').addUserOption(o => o.setName('user').setDescription('User').setRequired(true)).addStringOption(o => o.setName('nickname').setDescription('New nickname').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames), new SlashCommandBuilder().setName('purge').setDescription('Delete all messages').setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages), new SlashCommandBuilder().setName('role').setDescription('Info on a role').addRoleOption(o => o.setName('role').setDescription('Target role').setRequired(true)), new SlashCommandBuilder().setName('addrole').setDescription('Add role to user').addUserOption(o => o.setName('user').setDescription('Target').setRequired(true)).addRoleOption(o => o.setName('role').setDescription('Role').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles), new SlashCommandBuilder().setName('removerole').setDescription('Remove role from user').addUserOption(o => o.setName('user').setDescription('Target').setRequired(true)).addRoleOption(o => o.setName('role').setDescription('Role').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles), new SlashCommandBuilder().setName('dm').setDescription('DM a user').addUserOption(o => o.setName('user').setDescription('User').setRequired(true)).addStringOption(o => o.setName('message').setDescription('Message').setRequired(true)), new SlashCommandBuilder().setName('quote').setDescription('Send a random quote'), new SlashCommandBuilder().setName('flip').setDescription('Flip a coin'), new SlashCommandBuilder().setName('uptime').setDescription('Check bot uptime'), new SlashCommandBuilder().setName('status').setDescription('Bot status'), new SlashCommandBuilder().setName('suggest').setDescription('Send a suggestion').addStringOption(o => o.setName('text').setDescription('Your suggestion').setRequired(true)), new SlashCommandBuilder().setName('report').setDescription('Report a user').addUserOption(o => o.setName('user').setDescription('Who?').setRequired(true)).addStringOption(o => o.setName('reason').setDescription('Why?').setRequired(true)), new SlashCommandBuilder().setName('snipe').setDescription('Get last deleted message'), new SlashCommandBuilder().setName('embed').setDescription('Send embed message').addStringOption(o => o.setName('text').setDescription('Content').setRequired(true)), new SlashCommandBuilder().setName('botinfo').setDescription('Bot details'), new SlashCommandBuilder().setName('invite').setDescription('Bot invite link'), new SlashCommandBuilder().setName('afk').setDescription('Set AFK status').addStringOption(o => o.setName('reason').setDescription('AFK Reason').setRequired(false)) ];
 
-// Register slash commands globally
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+const rest = new REST({ version: '10' }).setToken(process.env.TOKEN); (async () => { try { console.log('🔄 Registering commands...'); await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands }); console.log('✅ Commands registered.'); } catch (err) { console.error('❌ Command registration failed:', err); } })();
 
-(async () => {
-  try {
-    console.log('🔄 Registering slash commands...');
-    await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
-      { body: commands }
-    );
-    console.log('✅ Slash commands registered!');
-  } catch (err) {
-    console.error('❌ Failed to register commands:', err);
-  }
-})();
+client.once(Events.ClientReady, () => { console.log(✅ Logged in as ${client.user.tag}); });
 
-// Bot ready
-client.once(Events.ClientReady, () => {
-  console.log(`🟢 Logged in as ${client.user.tag}`);
-});
+// You can now start implementing the handlers for these commands below
 
-// Slash command interaction handler
-client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
-  if (interaction.commandName === 'nickname') {
-    try {
-      const member = interaction.options.getMember('user');
-      const nickname = interaction.options.getString('nickname');
-
-      if (!interaction.member.permissions.has('ManageNicknames')) {
-        await interaction.reply({ content: '❌ You don’t have permission to change nicknames.', ephemeral: true });
-        return;
-      }
-
-      if (!member.manageable) {
-        await interaction.reply({ content: '❌ I can’t change this user’s nickname.', ephemeral: true });
-        return;
-      }
-
-      await member.setNickname(nickname);
-      await interaction.reply(`✅ Changed nickname of ${member.user.tag} to **${nickname}**`);
-    } catch (err) {
-      console.error('❌ Error changing nickname:', err);
-      if (!interaction.replied) {
-        await interaction.reply({ content: '❌ Something went wrong while changing nickname.', ephemeral: true });
-      }
-    }
-  }
-});
-
-// Login
 client.login(process.env.TOKEN);
+
