@@ -9,6 +9,10 @@ const {
 } = require('discord.js');
 require('dotenv').config();
 
+const express = require('express');
+const handler = require('./cmds');
+const automod = require('./automod');
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -18,11 +22,6 @@ const client = new Client({
     GatewayIntentBits.GuildVoiceStates
   ]
 });
-
-const handler = require('./cmds');
-
-// ✅ Hook automod.js
-require('./automod')(client);
 
 const commands = [
   new SlashCommandBuilder().setName('ban').setDescription('Ban a user')
@@ -41,6 +40,15 @@ const commands = [
     .addStringOption(o => o.setName('text').setDescription('Text').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
+  new SlashCommandBuilder().setName('embed').setDescription('Send embed message')
+    .addStringOption(o => o.setName('text').setDescription('Embed text').setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+
+  new SlashCommandBuilder().setName('dm').setDescription('DM a user')
+    .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
+    .addStringOption(o => o.setName('message').setDescription('Message').setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+
   new SlashCommandBuilder().setName('mute').setDescription('Mute a user')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.MuteMembers),
@@ -57,6 +65,9 @@ const commands = [
   new SlashCommandBuilder().setName('warnings').setDescription('Check user warnings')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+
+  new SlashCommandBuilder().setName('checkstrikes').setDescription('Check a user\'s strike count')
+    .addUserOption(o => o.setName('user').setDescription('User').setRequired(true)),
 
   new SlashCommandBuilder().setName('userinfo').setDescription('User info')
     .addUserOption(o => o.setName('user').setDescription('Target user')),
@@ -108,11 +119,6 @@ const commands = [
     .addRoleOption(o => o.setName('role').setDescription('Role').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
-  new SlashCommandBuilder().setName('dm').setDescription('DM a user')
-    .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
-    .addStringOption(o => o.setName('message').setDescription('Message').setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-
   new SlashCommandBuilder().setName('quote').setDescription('Send a random quote'),
 
   new SlashCommandBuilder().setName('flip').setDescription('Flip a coin'),
@@ -129,10 +135,6 @@ const commands = [
     .addStringOption(o => o.setName('reason').setDescription('Why?').setRequired(true)),
 
   new SlashCommandBuilder().setName('snipe').setDescription('Get last deleted message'),
-
-  new SlashCommandBuilder().setName('embed').setDescription('Send embed message')
-    .addStringOption(o => o.setName('text').setDescription('Content').setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
   new SlashCommandBuilder().setName('botinfo').setDescription('Bot details'),
 
@@ -191,10 +193,11 @@ client.on(Events.InteractionCreate, async interaction => {
   handler(interaction);
 });
 
+automod(client); // AutoMod listener (anti-swear, strikes, warn DM)
+
 client.login(process.env.TOKEN);
 
-// FAKE HTTP SERVER TO KEEP RENDER FROM COMPLAINING
-const express = require('express');
+// Keep-alive for Render
 const app = express();
 app.get('/', (_, res) => res.send('Zex Bot is running!'));
 app.listen(3000, () => console.log('🌐 Fake server listening on port 3000'));
