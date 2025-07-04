@@ -1,14 +1,18 @@
-const { Events, ButtonBuilder, ButtonStyle, ActionRowBuilder, ComponentType } = require('discord.js');
-
-const VERIFIED_ROLE_ID = '1378618525093990410';
-const GUILD_ID = '1363412626318561412';
-const REVERIFY_INTERVAL_DAYS = 14;
-const REVERIFY_WINDOW_HOURS = 24;
+const { Events, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 
 module.exports = (client) => {
-  // Send verification button when user joins
-  client.on(Events.GuildMemberAdd, async (member) => {
+  const VERIFY_CHANNEL_ID = '1378653094312804392';
+  const VERIFIED_ROLE_ID = '1378618525093990410';
+  const SERVER_ID = '1363412626318561412';
+
+  // When bot is ready, auto-send verify button
+  client.once(Events.ClientReady, async () => {
     try {
+      const guild = client.guilds.cache.get(SERVER_ID);
+      const channel = guild.channels.cache.get(VERIFY_CHANNEL_ID);
+
+      if (!channel) return console.warn('⚠️ Verify channel not found.');
+
       const button = new ButtonBuilder()
         .setCustomId('verify_me')
         .setLabel('✅ Verify')
@@ -16,80 +20,45 @@ module.exports = (client) => {
 
       const row = new ActionRowBuilder().addComponents(button);
 
-      await member.send({
-        content: `👋 Welcome to **${member.guild.name}**!\nPlease press the button below to verify yourself and access the server.`,
+      await channel.send({
+        content: `Welcome! Please click the button below to verify yourself.`,
         components: [row]
       });
+
+      console.log('✅ Verify button sent in channel.');
     } catch (err) {
-      console.error(`❌ Could not send DM to ${member.user.tag}`, err);
+      console.error('❌ Failed to send verify button:', err);
     }
   });
 
-  // Handle button interaction
+  // When someone clicks the verify button
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton()) return;
     if (interaction.customId !== 'verify_me') return;
 
-    const guild = client.guilds.cache.get(GUILD_ID);
-    if (!guild) {
-      return interaction.reply({ content: '❌ Guild not found.', flags: 64 });
-    }
-
-    const member = await guild.members.fetch(interaction.user.id).catch(() => null);
-    if (!member) {
-      return interaction.reply({ content: '❌ You are not in the server.', flags: 64 });
-    }
-
+    const guild = client.guilds.cache.get(SERVER_ID);
+    const member = guild.members.cache.get(interaction.user.id);
     const role = guild.roles.cache.get(VERIFIED_ROLE_ID);
+
     if (!role) {
-      return interaction.reply({ content: '❌ Verified role not found.', flags: 64 });
+      return interaction.reply({
+        content: '❌ "Verified" role not found in server.',
+        ephemeral: true
+      });
     }
 
     try {
       await member.roles.add(role);
-
-      // Store verification time (in-memory for now)
-      member.verifiedAt = Date.now();
-
       await interaction.reply({
         content: '✅ You have been verified!',
-        flags: 64
+        ephemeral: true
       });
     } catch (err) {
-      console.error(`❌ Failed to verify ${interaction.user.tag}`, err);
+      console.error(`❌ Failed to assign role to ${interaction.user.tag}`, err);
       await interaction.reply({
-        content: '❌ Verification failed. Contact staff.',
-        flags: 64
+        content: '❌ Could not verify you. Contact staff.',
+        ephemeral: true
       });
     }
   });
-
-  // Periodic check for reverification
-  setInterval(async () => {
-    const guild = client.guilds.cache.get(GUILD_ID);
-    if (!guild) return;
-
-    const role = guild.roles.cache.get(VERIFIED_ROLE_ID);
-    if (!role) return;
-
-    const now = Date.now();
-
-    const members = await guild.members.fetch();
-    for (const member of members.values()) {
-      if (!member.roles.cache.has(VERIFIED_ROLE_ID)) continue;
-
-      // If no custom tracking, kick after 14 days no reverify
-      const verifiedTimestamp = member.verifiedAt || 0;
-
-      const daysSince = (now - verifiedTimestamp) / (1000 * 60 * 60 * 24);
-      if (daysSince >= REVERIFY_INTERVAL_DAYS + REVERIFY_WINDOW_HOURS / 24) {
-        try {
-          await member.send(`🚨 You failed to reverify in time and have been kicked from **${guild.name}**.`);
-        } catch (_) {}
-
-        await member.kick('Failed to reverify in time');
-        console.log(`👢 Kicked ${member.user.tag} for not reverifying.`);
-      }
-    }
-  }, 1000 * 60 * 60); // runs hourly
 };
