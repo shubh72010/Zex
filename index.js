@@ -107,7 +107,7 @@ try {
   }
 }
 
-
+}});
 
 automod(client);
 
