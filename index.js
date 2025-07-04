@@ -91,13 +91,23 @@ if (!role) {
 
 try {
   await member.roles.add(role);
-  await interaction.reply({ content: '✅ You have been verified and given access to the server!', ephemeral: true });
+  if (!interaction.replied && !interaction.deferred) {
+    await interaction.reply({
+      content: '✅ You have been verified and given access to the server!',
+      ephemeral: true
+    });
+  }
 } catch (err) {
   console.error(`❌ Failed to assign role to ${interaction.user.tag}`, err);
-  await interaction.reply({ content: '❌ Could not verify you. Contact staff.', ephemeral: true });
+  if (!interaction.replied && !interaction.deferred) {
+    await interaction.reply({
+      content: '❌ Could not verify you. Contact staff.',
+      ephemeral: true
+    });
+  }
 }
 
-} });
+
 
 automod(client);
 
