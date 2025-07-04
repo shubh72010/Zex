@@ -66,7 +66,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => { try { console.log('🔄 Registering commands...'); await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands.map(cmd => cmd.toJSON()) }); console.log('✅ Commands registered.'); } catch (err) { console.error('❌ Command registration failed:', err); } })();
 
-client.once(Events.ClientReady, () => { console.log(✅ Logged in as ${client.user.tag}); });
+client.once(Events.ClientReady, () => { console.log('✅ Logged in as ${client.user.tag'}); });
 
 client.on(Events.InteractionCreate, async interaction => { if (interaction.isChatInputCommand()) { handler(interaction); } });
 
@@ -79,7 +79,7 @@ await member.send({
   components: [row]
 });
 
-} catch (err) { console.error(❌ Could not send verification DM to ${member.user.tag}, err); } });
+} catch (err) { console.error('❌ Could not send verification DM to ${member.user.tag}', err); } });
 
 client.on(Events.InteractionCreate, async interaction => { if (!interaction.isButton()) return;
 
