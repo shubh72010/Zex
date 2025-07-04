@@ -21,6 +21,9 @@ const client = new Client({
 
 const handler = require('./cmds');
 
+// ✅ Hook automod.js
+require('./automod')(client);
+
 const commands = [
   new SlashCommandBuilder().setName('ban').setDescription('Ban a user')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
@@ -35,7 +38,8 @@ const commands = [
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
   new SlashCommandBuilder().setName('say').setDescription('Make bot say something')
-    .addStringOption(o => o.setName('text').setDescription('Text').setRequired(true)),
+    .addStringOption(o => o.setName('text').setDescription('Text').setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
   new SlashCommandBuilder().setName('mute').setDescription('Mute a user')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
@@ -106,7 +110,8 @@ const commands = [
 
   new SlashCommandBuilder().setName('dm').setDescription('DM a user')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
-    .addStringOption(o => o.setName('message').setDescription('Message').setRequired(true)),
+    .addStringOption(o => o.setName('message').setDescription('Message').setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
   new SlashCommandBuilder().setName('quote').setDescription('Send a random quote'),
 
@@ -126,7 +131,8 @@ const commands = [
   new SlashCommandBuilder().setName('snipe').setDescription('Get last deleted message'),
 
   new SlashCommandBuilder().setName('embed').setDescription('Send embed message')
-    .addStringOption(o => o.setName('text').setDescription('Content').setRequired(true)),
+    .addStringOption(o => o.setName('text').setDescription('Content').setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
   new SlashCommandBuilder().setName('botinfo').setDescription('Bot details'),
 
