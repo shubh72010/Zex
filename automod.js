@@ -1,101 +1,59 @@
-const { Events, PermissionFlagsBits } = require('discord.js');
+// automod.js (full advanced version with strike + DM + filtering)
 
-const swearWords = ['fuck', 'shit', 'bitch', 'asshole'];
-const inviteRegex = /(discord\.gg|discord\.com\/invite)\/\w+/gi;
-const linkRegex = /https?:\/\/|www\./gi;
-const emojiRegex = /<a?:\w+:\d+>|\p{Emoji}/gu;
+const { Events } = require('discord.js');
 
-const lastMessages = new Map(); // userId -> last message content
-const ghostPings = new Map(); // messageId -> mentioned users
+// Basic word filter - Add more as needed
+const swearWords = [
+  'fuck', 'shit', 'bitch', 'asshole', 'dick', 'cunt', 'nigga', 'nigger', 'faggot', 'retard',
+  'pussy', 'bastard', 'slut', 'whore', 'hoe', 'cock', 'nazi'
+];
+
+// In-memory strike storage
+const strikes = new Map();
 
 module.exports = (client) => {
-  client.on(Events.MessageCreate, async (msg) => {
-    if (!msg.guild || msg.author.bot) return;
-    if (msg.member.permissions.has(PermissionFlagsBits.ManageMessages)) return;
+  client.on(Events.MessageCreate, async message => {
+    if (message.author.bot || !message.guild) return;
 
-    const { content, author, member } = msg;
-    const lc = content.toLowerCase();
+    const content = message.content.toLowerCase();
+    const matched = swearWords.find(word => content.includes(word));
 
-    // 1. Swear Filter
-    if (swearWords.some(word => lc.includes(word))) {
-      await msg.delete().catch(() => {});
-      return msg.channel.send(`${author}, watch your language! ❌`).then(m => setTimeout(() => m.delete(), 4000));
-    }
-
-    // 2. Invite Link Block
-    if (inviteRegex.test(content)) {
-      await msg.delete().catch(() => {});
-      return msg.channel.send(`${author}, invite links are not allowed. 🚫`).then(m => setTimeout(() => m.delete(), 4000));
-    }
-
-    // 3. General Link Block
-    if (linkRegex.test(content)) {
-      await msg.delete().catch(() => {});
-      return msg.channel.send(`${author}, links are blocked in this server. 🔗`).then(m => setTimeout(() => m.delete(), 4000));
-    }
-
-    // 4. CAPS Spam Detection
-    const caps = content.replace(/[^A-Z]/g, '');
-    if (caps.length > 10 && caps.length >= content.length * 0.7) {
-      await msg.delete().catch(() => {});
-      return msg.channel.send(`${author}, calm down with the CAPS. 🧢`).then(m => setTimeout(() => m.delete(), 4000));
-    }
-
-    // 5. Emoji Spam Detection
-    const emojis = content.match(emojiRegex);
-    if (emojis && emojis.length > 5) {
-      await msg.delete().catch(() => {});
-      return msg.channel.send(`${author}, too many emojis! 🥴`).then(m => setTimeout(() => m.delete(), 4000));
-    }
-
-    // 6. Repeat Message Filter
-    const last = lastMessages.get(author.id);
-    if (last && last === content) {
-      await msg.delete().catch(() => {});
-      return msg.channel.send(`${author}, stop repeating messages! 🔁`).then(m => setTimeout(() => m.delete(), 4000));
-    } else {
-      lastMessages.set(author.id, content);
-    }
-
-    // 7. Ghost Ping Detection (store mentions)
-    if (msg.mentions.users.size > 0) {
-      ghostPings.set(msg.id, msg.mentions.users.map(u => u.id));
-    }
-  });
-
-  // 8. Ghost Ping Check on Delete
-  client.on(Events.MessageDelete, async (msg) => {
-    if (!msg.guild || msg.author?.bot) return;
-    const mentions = ghostPings.get(msg.id);
-    if (!mentions || mentions.length === 0) return;
-
-    const mentionNames = mentions.map(id => `<@${id}>`).join(', ');
-    const channel = msg.channel;
-    ghostPings.delete(msg.id);
-
-    return channel.send(`👻 Ghost ping detected! Message from <@${msg.author?.id}> mentioned: ${mentionNames}`).then(m => setTimeout(() => m.delete(), 6000));
-  });
-
-  // 9. Auto-warn + Temp Mute (after 3 filters triggered)
-  const punishments = new Map(); // userId -> count
-
-  client.on(Events.MessageDelete, async (msg) => {
-    if (!msg.guild || !msg.author || msg.author.bot) return;
-    if (msg.member?.permissions.has(PermissionFlagsBits.ManageMessages)) return;
-
-    const userId = msg.author.id;
-    const count = punishments.get(userId) || 0;
-    punishments.set(userId, count + 1);
-
-    // Auto-mute at 3 offenses
-    if (count + 1 >= 3) {
+    if (matched) {
       try {
-        await msg.member.timeout(60_000); // 1 minute mute
-        punishments.set(userId, 0);
-        msg.channel.send(`${msg.author}, you have been muted for repeated violations. ⛔`).then(m => setTimeout(() => m.delete(), 6000));
-      } catch {
-        // couldn't mute
+        // Delete the message
+        await message.delete();
+
+        // Strike key = guildID-userID
+        const key = `${message.guild.id}-${message.author.id}`;
+        const current = strikes.get(key) || 0;
+        const updated = current + 1;
+        strikes.set(key, updated);
+
+        // DM the user
+        try {
+          await message.author.send(
+            `⚠️ You used a banned word (**${matched}**) in **${message.guild.name}**.\n` +
+            `You have received a **strike**. Total strikes: **${updated}**.`
+          );
+        } catch (_) {
+          // User has DMs off
+        }
+
+        // Timeout after 3 strikes
+        if (updated >= 3) {
+          await message.member.timeout(10 * 60 * 1000); // 10 mins
+          try {
+            await message.author.send(`⛔ You have reached 3 strikes. You have been timed out for 10 minutes.`);
+          } catch (_) {}
+        }
+
+        console.log(`User ${message.author.tag} warned for: ${matched}`);
+      } catch (err) {
+        console.error('❌ Error in automod:', err);
       }
     }
   });
 };
+
+// Export the strikes map for use in cmds.js
+module.exports.strikes = strikes;
