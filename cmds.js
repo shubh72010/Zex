@@ -4,6 +4,10 @@ const warnedUsers = new Map();
 const snipedMessages = new Map();
 const afkUsers = new Map();
 
+function isMod(member) {
+  return member.permissions.has(PermissionFlagsBits.ManageMessages);
+}
+
 module.exports = async (interaction) => {
   const { commandName, options, guild, member, client, channel, user } = interaction;
 
@@ -14,6 +18,9 @@ module.exports = async (interaction) => {
         return interaction.reply(`🏓 Pong! ${client.ws.ping}ms`);
 
       case 'say': {
+        if (!isMod(member)) {
+          return interaction.reply({ content: "❌ Only moderators can use this command.", ephemeral: true });
+        }
         const text = options.getString('text');
         await interaction.deferReply({ ephemeral: false });
         await interaction.deleteReply();
@@ -23,6 +30,24 @@ module.exports = async (interaction) => {
           logger.logToFile(`${user.tag} used /say → ${text}`, 'MESSAGE_SENT');
         }
         break;
+      }
+
+      case 'embed': {
+        if (!isMod(member)) {
+          return interaction.reply({ content: "❌ Only moderators can use this command.", ephemeral: true });
+        }
+        const text = options.getString('text');
+        return interaction.reply({ embeds: [{ description: text }] });
+      }
+
+      case 'dm': {
+        if (!isMod(member)) {
+          return interaction.reply({ content: "❌ Only moderators can DM users with this command.", ephemeral: true });
+        }
+        const user = options.getUser('user');
+        const message = options.getString('message');
+        await user.send(message);
+        return interaction.reply({ content: `📩 Message sent to ${user.tag}`, ephemeral: true });
       }
 
       case 'setlog': {
@@ -70,11 +95,6 @@ module.exports = async (interaction) => {
       case 'flip': {
         const result = Math.random() < 0.5 ? 'Heads' : 'Tails';
         return interaction.reply(`🪙 You got **${result}**!`);
-      }
-
-      case 'embed': {
-        const text = options.getString('text');
-        return interaction.reply({ embeds: [{ description: text }] });
       }
 
       case 'quote': {
@@ -141,13 +161,6 @@ module.exports = async (interaction) => {
         const amount = options.getInteger('amount');
         const messages = await interaction.channel.bulkDelete(amount, true);
         return interaction.reply({ content: `🧹 Deleted ${messages.size} messages.`, ephemeral: true });
-      }
-
-      case 'dm': {
-        const user = options.getUser('user');
-        const message = options.getString('message');
-        await user.send(message);
-        return interaction.reply({ content: `📩 Message sent to ${user.tag}`, ephemeral: true });
       }
 
       case 'lock': {
