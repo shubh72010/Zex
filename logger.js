@@ -1,71 +1,97 @@
-const fs = require('fs');
-const path = require('path');
+const { Events, AuditLogEvent } = require('discord.js');
 
-// === File paths ===
-const logFile = path.join(__dirname, 'zex.log');
-const configFile = path.join(__dirname, 'logConfig.json');
-
-// === Bundle presets ===
-const bundles = {
-  messages: ['message_sent', 'message_delete', 'message_edit'],
-  members: ['member_join', 'member_leave', 'member_update'],
-  voice: ['voice_update'],
-  all: ['message_sent', 'message_delete', 'message_edit', 'member_join', 'member_leave', 'member_update', 'voice_update']
+// Channel IDs
+const CHANNELS = {
+  mod: '1378636499595165761',     // Moderation: bans, kicks
+  member: '1378636714926542888',  // Member joins/leaves, nick changes
+  message: '1378636623037857892', // Deleted messages, edits
+  server: '1378636344250597386'   // Channel/Role changes, server config
 };
 
-// === Read config ===
-function getConfig() {
-  if (!fs.existsSync(configFile)) fs.writeFileSync(configFile, '{}');
-  return JSON.parse(fs.readFileSync(configFile, 'utf8'));
-}
+module.exports = (client) => {
 
-// === Save config ===
-function saveConfig(config) {
-  fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
-}
+  // === BAN LOG ===
+  client.on(Events.GuildBanAdd, async ban => {
+    const { guild, user } = ban;
+    const fetched = await guild.fetchAuditLogs({ type: AuditLogEvent.MemberBanAdd, limit: 1 });
+    const entry = fetched.entries.first();
+    const channel = guild.channels.cache.get(CHANNELS.mod);
 
-// === Set logging type or bundle ===
-function setLogType(guildId, type, enabled) {
-  const config = getConfig();
-  if (!config[guildId]) config[guildId] = {};
+    if (!channel || !entry || entry.target.id !== user.id) return;
 
-  if (bundles[type]) {
-    // Enable/disable all bundled types
-    bundles[type].forEach(subType => {
-      config[guildId][subType] = enabled;
-    });
-  } else {
-    // Single type toggle
-    config[guildId][type] = enabled;
-  }
+    channel.send(`🔨 **${user.tag}** was banned by **${entry.executor.tag}**\n📝 Reason: ${entry.reason || 'No reason provided'}`);
+  });
 
-  saveConfig(config);
-}
+  // === KICK LOG ===
+  client.on(Events.GuildMemberRemove, async member => {
+    const fetched = await member.guild.fetchAuditLogs({ type: AuditLogEvent.MemberKick, limit: 1 });
+    const entry = fetched.entries.first();
+    const channel = member.guild.channels.cache.get(CHANNELS.mod);
 
-// === Check if a log type is enabled ===
-function isLogEnabled(guildId, type) {
-  const config = getConfig();
-  return config[guildId]?.[type] === true;
-}
+    if (!channel || !entry || entry.target.id !== member.id) return;
 
-// === Log to file and console ===
-function logToFile(msg, type = 'LOG') {
-  const line = `[${new Date().toISOString()}] [${type}] ${msg}`;
-  console.log(line);
-  fs.appendFileSync(logFile, line + '\n');
-}
+    channel.send(`👢 **${member.user.tag}** was kicked by **${entry.executor.tag}**\n📝 Reason: ${entry.reason || 'No reason provided'}`);
+  });
 
-// === Get all logging status for a guild ===
-function getLogStatus(guildId) {
-  const config = getConfig();
-  return config[guildId] || {};
-}
+  // === MESSAGE DELETE ===
+  client.on(Events.MessageDelete, async message => {
+    if (!message.guild || message.partial) return;
+    const fetched = await message.guild.fetchAuditLogs({ type: AuditLogEvent.MessageDelete, limit: 1 });
+    const entry = fetched.entries.first();
+    const channel = message.guild.channels.cache.get(CHANNELS.message);
 
-// === Export everything ===
-module.exports = {
-  setLogType,
-  isLogEnabled,
-  logToFile,
-  getLogStatus,
-  bundles
+    if (!channel) return;
+
+    const authorTag = message.author?.tag || 'Unknown';
+    const content = message.content || '[No content]';
+    channel.send(`🗑️ **${authorTag}**'s message was deleted in <#${message.channel.id}>\n🔍 Deleted by: ${entry?.executor.tag || 'Unknown'}\n📄 Content: \`${content}\``);
+  });
+
+  // === ROLE DELETE ===
+  client.on(Events.GuildRoleDelete, async role => {
+    const fetched = await role.guild.fetchAuditLogs({ type: AuditLogEvent.RoleDelete, limit: 1 });
+    const entry = fetched.entries.first();
+    const channel = role.guild.channels.cache.get(CHANNELS.server);
+
+    if (!channel) return;
+    channel.send(`🚫 Role **${role.name}** was deleted by **${entry?.executor.tag || 'Unknown'}**`);
+  });
+
+  // === CHANNEL DELETE ===
+  client.on(Events.ChannelDelete, async channelObj => {
+    const fetched = await channelObj.guild.fetchAuditLogs({ type: AuditLogEvent.ChannelDelete, limit: 1 });
+    const entry = fetched.entries.first();
+    const channel = channelObj.guild.channels.cache.get(CHANNELS.server);
+
+    if (!channel) return;
+    channel.send(`📤 Channel **#${channelObj.name}** was deleted by **${entry?.executor.tag || 'Unknown'}**`);
+  });
+
+  // === MEMBER JOIN ===
+  client.on(Events.GuildMemberAdd, member => {
+    const channel = member.guild.channels.cache.get(CHANNELS.member);
+    if (channel) {
+      channel.send(`📥 **${member.user.tag}** joined the server.`);
+    }
+  });
+
+  // === MEMBER LEAVE ===
+  client.on(Events.GuildMemberRemove, member => {
+    const channel = member.guild.channels.cache.get(CHANNELS.member);
+    if (channel) {
+      channel.send(`📤 **${member.user.tag}** left the server.`);
+    }
+  });
+
+  // === NICKNAME UPDATE ===
+  client.on(Events.GuildMemberUpdate, (oldMember, newMember) => {
+    if (oldMember.nickname !== newMember.nickname) {
+      const channel = newMember.guild.channels.cache.get(CHANNELS.member);
+      const oldNick = oldMember.nickname || oldMember.user.username;
+      const newNick = newMember.nickname || newMember.user.username;
+      if (channel) {
+        channel.send(`📝 **${oldMember.user.tag}** changed nickname:\nBefore: \`${oldNick}\`\nAfter: \`${newNick}\``);
+      }
+    }
+  });
 };
