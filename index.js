@@ -161,6 +161,17 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
+automod(client);
+verifier(client);
+logger(client); // ✅ ADDED
+
+client.login(process.env.TOKEN);
+
+const app = express();
+app.get('/', (_, res) => res.send('Zex Bot is running!'));
+app.listen(3000, () => console.log('🌐 Fake server listening on port 3000'));
+
+
 const axios = require('axios');
 
 app.post('/api/chat', express.json(), async (req, res) => {
@@ -192,13 +203,3 @@ app.post('/api/chat', express.json(), async (req, res) => {
     res.status(500).json({ error: "ZEX failed to think." });
   }
 });
-
-automod(client);
-verifier(client);
-logger(client); // ✅ ADDED
-
-client.login(process.env.TOKEN);
-
-const app = express();
-app.get('/', (_, res) => res.send('Zex Bot is running!'));
-app.listen(3000, () => console.log('🌐 Fake server listening on port 3000'));
