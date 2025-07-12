@@ -10,7 +10,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => { try { console.log('🔄 Registering commands...'); await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands.map(cmd => cmd.toJSON()) }); console.log('✅ Commands registered.'); } catch (err) { console.error('❌ Command registration failed:', err); } })();
 
-client.once(Events.ClientReady, () => { console.log(✅ Logged in as ${client.user.tag});
+client.once(Events.ClientReady, () => { console.log(`✅ Logged in as ${client.user.tag}`);
 
 const verifyChannel = client.channels.cache.get('1378653094312804392'); if (verifyChannel) { verifyChannel.send({ content: '📢 To enter Zeta HS, you must have a verified phone number and email linked to your Discord account. Reverification is required every 14 days. You will be reminded 24 hours before expiry, and failure to reverify results in removal from the server.' }).catch(console.error); } });
 
