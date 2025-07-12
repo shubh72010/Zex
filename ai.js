@@ -1,8 +1,8 @@
 // ai.js
 
 import express from "express";
-import axios from "axios";
 import dotenv from "dotenv";
+import axios from "axios";
 
 dotenv.config();
 const app = express();
@@ -11,15 +11,17 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 app.use(express.json());
 
+// Health check
 app.get("/", (req, res) => {
-  res.send("🧠 ZEX AI Core is running. Type fast. Think faster.");
+  res.send("🧠 ZEX Chat API is running.");
 });
 
+// Main chat endpoint
 app.post("/api/chat", async (req, res) => {
   const { prompt } = req.body;
 
   if (!OPENROUTER_API_KEY) {
-    return res.status(500).json({ error: "ZEX has no brain (API key missing)." });
+    return res.status(500).json({ error: "Missing OpenRouter API key." });
   }
 
   if (!prompt || typeof prompt !== "string" || prompt.trim() === "") {
@@ -31,29 +33,28 @@ app.post("/api/chat", async (req, res) => {
       "https://openrouter.ai/api/v1/chat/completions",
       {
         model: "openrouter/cypher-alpha:free",
-        messages: [{ role: "user", content: prompt }]
+        messages: [{ role: "user", content: prompt }],
       },
       {
         headers: {
           Authorization: `Bearer ${OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "https://zex.dortz.zone", // optional
-          "X-Title": "ZEX-Core", // optional
-        }
+          "HTTP-Referer": "https://zex.dortz.zone",
+          "X-Title": "ZEX-Core",
+        },
       }
     );
 
     const reply = response.data.choices?.[0]?.message?.content;
-    if (!reply) throw new Error("No reply from model");
+    if (!reply) throw new Error("Empty response from model.");
 
     res.json({ reply });
-
   } catch (err) {
-    console.error("ZEX ERROR:", err?.response?.data || err.message);
-    res.status(500).json({ error: "ZEX exploded while thinking." });
+    console.error("ZEX Error:", err?.response?.data || err.message);
+    res.status(500).json({ error: "ZEX brain fried. Try again later." });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 ZEX is online at http://localhost:${PORT}`);
+  console.log(`🚀 ZEX Chat API running at http://localhost:${PORT}`);
 });
