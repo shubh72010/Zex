@@ -190,7 +190,7 @@ app.post('/api/chat', express.json(), async (req, res) => {
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
-        model: "openrouter/cypher-alpha:free",
+        model: "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
         messages: [{ role: "user", content: prompt }],
       },
       {
