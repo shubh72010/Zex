@@ -7,6 +7,38 @@ const automod = require('./automod');
 const verifier = require('./verifier');
 const logger = require('./logger'); // ✅ ADDED
 
+const axios = require('axios');
+
+app.post('/api/chat', express.json(), async (req, res) => {
+  const { prompt } = req.body;
+  if (!process.env.OPENROUTER_API_KEY || !prompt) {
+    return res.status(400).json({ error: "Missing prompt or API key." });
+  }
+
+  try {
+    const response = await axios.post(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        model: "openrouter/cypher-alpha:free",
+        messages: [{ role: "user", content: prompt }],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://zex.dortz.zone",
+          "X-Title": "ZEX-Core",
+        },
+      }
+    );
+    const reply = response.data.choices?.[0]?.message?.content;
+    res.json({ reply });
+  } catch (err) {
+    console.error("ZEX AI error:", err);
+    res.status(500).json({ error: "ZEX failed to think." });
+  }
+});
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
