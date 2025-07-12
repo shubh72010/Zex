@@ -2,12 +2,48 @@ const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, Events, Pe
 require('dotenv').config();
 
 const express = require('express');
-const app = express();
+const axios = require('axios');
 const handler = require('./cmds');
 const automod = require('./automod');
 const verifier = require('./verifier');
 const logger = require('./logger');
-const axios = require('axios');
+
+const app = express(); // ✅ FIXED: declared before using it
+app.use(express.json());
+
+app.get('/', (_, res) => res.send('Zex Bot is running!'));
+
+app.post('/api/chat', async (req, res) => {
+  const { prompt } = req.body;
+  if (!process.env.OPENROUTER_API_KEY || !prompt) {
+    return res.status(400).json({ error: "Missing prompt or API key." });
+  }
+
+  try {
+    const response = await axios.post(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        model: "tngtech/deepseek-r1t2-chimera:free",
+        messages: [{ role: "user", content: prompt }],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://zex.dortz.zone",
+          "X-Title": "ZEX-Core",
+        },
+      }
+    );
+    const reply = response.data.choices?.[0]?.message?.content;
+    res.json({ reply });
+  } catch (err) {
+    console.error("ZEX AI error:", err);
+    res.status(500).json({ error: "ZEX failed to think." });
+  }
+});
+
+app.listen(3000, () => console.log('🌐 Fake server listening on port 3000'));
 
 const client = new Client({
   intents: [
@@ -24,37 +60,48 @@ const commands = [
   new SlashCommandBuilder().setName('ban').setDescription('Ban a user')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+
   new SlashCommandBuilder().setName('kick').setDescription('Kick a user')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
+
   new SlashCommandBuilder().setName('clear').setDescription('Delete messages')
     .addIntegerOption(o => o.setName('amount').setDescription('Number of messages').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+
   new SlashCommandBuilder().setName('say').setDescription('Make bot say something')
     .addStringOption(o => o.setName('text').setDescription('Text').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+
   new SlashCommandBuilder().setName('embed').setDescription('Send embed message')
     .addStringOption(o => o.setName('text').setDescription('Embed text').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+
   new SlashCommandBuilder().setName('dm').setDescription('DM a user')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
     .addStringOption(o => o.setName('message').setDescription('Message').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+
   new SlashCommandBuilder().setName('mute').setDescription('Mute a user')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.MuteMembers),
+
   new SlashCommandBuilder().setName('unmute').setDescription('Unmute a user')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.MuteMembers),
+
   new SlashCommandBuilder().setName('warn').setDescription('Warn a user')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
     .addStringOption(o => o.setName('reason').setDescription('Reason').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+
   new SlashCommandBuilder().setName('warnings').setDescription('Check user warnings')
     .addUserOption(o => o.setName('user').setDescription('User').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+
   new SlashCommandBuilder().setName('userinfo').setDescription('User info')
     .addUserOption(o => o.setName('user').setDescription('Target user')),
+
   new SlashCommandBuilder().setName('serverinfo').setDescription('Server info'),
   new SlashCommandBuilder().setName('ping').setDescription('Bot latency'),
   new SlashCommandBuilder().setName('poll').setDescription('Start a yes/no poll')
@@ -135,77 +182,8 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
-// 🧠 ZEX replies via OpenRouter if mentioned
-client.on('messageCreate', async message => {
-  if (message.author.bot || !message.guild) return;
-
-  if (message.mentions.has(client.user)) {
-    const prompt = message.content;
-
-    try {
-      const response = await axios.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          model: "openrouter/cypher-alpha:free",
-          messages: [{ role: "user", content: prompt }],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://zex.dortz.zone",
-            "X-Title": "ZEX-Core",
-          },
-        }
-      );
-
-      const reply = response.data.choices?.[0]?.message?.content;
-      if (reply) message.reply(reply);
-      else message.reply("🧠 I'm blank rn...");
-    } catch (err) {
-      console.error("ZEX AI error:", err);
-      message.reply("⚠️ My brain short-circuited");
-    }
-  }
-});
-
 automod(client);
 verifier(client);
 logger(client);
 
 client.login(process.env.TOKEN);
-
-// Express Routes
-app.get('/', (_, res) => res.send('Zex Bot is running!'));
-app.listen(3000, () => console.log('🌐 Fake server listening on port 3000'));
-
-// POST /api/chat for external access
-app.post('/api/chat', express.json(), async (req, res) => {
-  const { prompt } = req.body;
-  if (!process.env.OPENROUTER_API_KEY || !prompt) {
-    return res.status(400).json({ error: "Missing prompt or API key." });
-  }
-
-  try {
-    const response = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        model: "tngtech/deepseek-r1t2-chimera:free",
-        messages: [{ role: "user", content: prompt }],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://zex.dortz.zone",
-          "X-Title": "ZEX-Core",
-        },
-      }
-    );
-    const reply = response.data.choices?.[0]?.message?.content;
-    res.json({ reply });
-  } catch (err) {
-    console.error("ZEX AI error (API):", err);
-    res.status(500).json({ error: "ZEX failed to think." });
-  }
-});
