@@ -135,7 +135,7 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
-// 🔁 DeepSeek Reply via Mention
+// 🔁 Cypher Alpha Reply via Mention
 client.on('messageCreate', async message => {
   if (message.author.bot || !message.guild) return;
 
@@ -146,7 +146,7 @@ client.on('messageCreate', async message => {
       const response = await axios.post(
         'https://openrouter.ai/api/v1/chat/completions',
         {
-          model: 'tngtech/deepseek-r1t2-chimera:free',
+          model: 'openrouter/cypher-alpha:free', // ✅ switched from DeepSeek
           messages: [{ role: 'user', content: prompt }],
         },
         {
@@ -163,7 +163,7 @@ client.on('messageCreate', async message => {
       if (reply) message.reply(reply);
       else message.reply("🧠 I'm blank rn...");
     } catch (err) {
-      console.error('ZEX AI error (DeepSeek):', err);
+      console.error('ZEX AI error (Cypher Alpha):', err);
       message.reply('⚠️ My brain short-circuited');
     }
   }
@@ -179,7 +179,7 @@ app.get('/', (_, res) => res.send('Zex Bot is running!'));
 
 app.listen(3000, () => console.log('🌐 Fake server listening on port 3000'));
 
-// POST /api/chat — DeepSeek Endpoint
+// POST /api/chat — Cypher Alpha Endpoint
 app.post('/api/chat', express.json(), async (req, res) => {
   const { prompt } = req.body;
   if (!process.env.OPENROUTER_API_KEY || !prompt) {
@@ -190,7 +190,7 @@ app.post('/api/chat', express.json(), async (req, res) => {
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: 'tngtech/deepseek-r1t2-chimera:free',
+        model: 'openrouter/cypher-alpha:free', // ✅ switched from DeepSeek
         messages: [{ role: 'user', content: prompt }],
       },
       {
