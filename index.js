@@ -8,7 +8,6 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 
-const handler = require('./cmds');
 const automod = require('./automod');
 const verifier = require('./verifier');
 const logger = require('./logger');
