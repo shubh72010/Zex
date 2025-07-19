@@ -1,4 +1,21 @@
-// commands.js const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+// commands.js
+
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+
+const commands = [
+  new SlashCommandBuilder()
+    .setName('ban')
+    .setDescription('Ban a user')
+    .addUserOption(o =>
+      o.setName('user')
+        .setDescription('User')
+        .setRequired(true)
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
+    .toJSON()
+];
+
+module.exports = { commands };
 
 const commands = [ new SlashCommandBuilder().setName('ban').setDescription('Ban a user') .addUserOption(o => o.setName('user').setDescription('User').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
