@@ -2,7 +2,7 @@
 
 const { Client, GatewayIntentBits, Partials, REST, Routes, Collection, PermissionsBitField } = require('discord.js'); const fs = require('fs'); const express = require('express'); const app = express(); const PORT = process.env.PORT || 3000;
 
-app.get('/', (req, res) => res.send('Zex is live!')); app.listen(PORT, () => console.log(🌐 Fake server listening on port ${PORT}));
+app.get('/', (req, res) => res.send('Zex is live!')); app.listen(PORT, () => console.log(`🌐 Fake server listening on port ${PORT}`));
 
 const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers ], partials: [Partials.Channel] });
 
@@ -10,7 +10,7 @@ client.commands = new Collection(); const commands = []; const commandFiles = fs
 
 for (const file of commandFiles) { const command = require(./commands/${file}); client.commands.set(command.data.name, command); commands.push(command.data.toJSON()); }
 
-client.once('ready', () => { console.log(✅ Logged in as ${client.user.tag}); });
+client.once('ready', () => { console.log(`✅ Logged in as ${client.user.tag}`); });
 
 client.on('interactionCreate', async interaction => { if (!interaction.isChatInputCommand()) return;
 
