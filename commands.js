@@ -1,77 +1,94 @@
-// commands.js
-
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const logger = require('./logger');
 
+const warnedUsers = new Map();
+const snipedMessages = new Map();
+const afkUsers = new Map();
 
-const commands = [ new SlashCommandBuilder().setName('ban').setDescription('Ban a user') .addUserOption(o => o.setName('user').setDescription('User').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+const isMod = member => member.permissions.has(PermissionFlagsBits.ManageMessages);
 
-new SlashCommandBuilder().setName('kick').setDescription('Kick a user') .addUserOption(o => o.setName('user').setDescription('User').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
+// Slash command definitions
+const commands = [
+  new SlashCommandBuilder()
+    .setName('ban')
+    .setDescription('Ban a user')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('The user to ban')
+        .setRequired(true)
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
-new SlashCommandBuilder().setName('clear').setDescription('Delete messages') .addIntegerOption(o => o.setName('amount').setDescription('Number of messages').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+  new SlashCommandBuilder()
+    .setName('say')
+    .setDescription('Say something through the bot')
+    .addStringOption(option =>
+      option.setName('message')
+        .setDescription('Message to say')
+        .setRequired(true)
+    ),
 
-new SlashCommandBuilder().setName('say').setDescription('Make bot say something') .addStringOption(o => o.setName('text').setDescription('Text').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+  new SlashCommandBuilder()
+    .setName('embed')
+    .setDescription('Send an embed message')
+    .addStringOption(option =>
+      option.setName('title')
+        .setDescription('Embed title')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('description')
+        .setDescription('Embed description')
+        .setRequired(true)
+    ),
 
-new SlashCommandBuilder().setName('embed').setDescription('Send embed message') .addStringOption(o => o.setName('text').setDescription('Embed text').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+  new SlashCommandBuilder()
+    .setName('poll')
+    .setDescription('Create a poll')
+    .addStringOption(option =>
+      option.setName('question')
+        .setDescription('Poll question')
+        .setRequired(true)
+    ),
 
-new SlashCommandBuilder().setName('dm').setDescription('DM a user') .addUserOption(o => o.setName('user').setDescription('User').setRequired(true)) .addStringOption(o => o.setName('message').setDescription('Message').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+  new SlashCommandBuilder()
+    .setName('status')
+    .setDescription('Set the bot\'s status')
+    .addStringOption(option =>
+      option.setName('type')
+        .setDescription('online/dnd/idle/invisible')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('text')
+        .setDescription('Status text')
+        .setRequired(true)
+    ),
 
-new SlashCommandBuilder().setName('mute').setDescription('Mute a user') .addUserOption(o => o.setName('user').setDescription('User').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.MuteMembers),
+  new SlashCommandBuilder()
+    .setName('afk')
+    .setDescription('Set yourself AFK')
+    .addStringOption(option =>
+      option.setName('reason')
+        .setDescription('Reason for AFK')
+        .setRequired(false)
+    )
+];
 
-new SlashCommandBuilder().setName('unmute').setDescription('Unmute a user') .addUserOption(o => o.setName('user').setDescription('User').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.MuteMembers),
+// Keep-alive ping for Render hosting
+require('http')
+  .createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Bot is alive');
+  })
+  .listen(3000);
 
-new SlashCommandBuilder().setName('warn').setDescription('Warn a user') .addUserOption(o => o.setName('user').setDescription('User').setRequired(true)) .addStringOption(o => o.setName('reason').setDescription('Reason').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-
-new SlashCommandBuilder().setName('warnings').setDescription('Check user warnings') .addUserOption(o => o.setName('user').setDescription('User').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-
-new SlashCommandBuilder().setName('userinfo').setDescription('User info') .addUserOption(o => o.setName('user').setDescription('Target user')),
-
-new SlashCommandBuilder().setName('serverinfo').setDescription('Server info'),
-
-new SlashCommandBuilder().setName('ping').setDescription('Bot latency'),
-
-new SlashCommandBuilder().setName('poll').setDescription('Start a yes/no poll') .addStringOption(o => o.setName('question').setDescription('Poll?').setRequired(true)),
-
-new SlashCommandBuilder().setName('help').setDescription('Help menu'),
-
-new SlashCommandBuilder().setName('avatar').setDescription('User avatar') .addUserOption(o => o.setName('user').setDescription('User')),
-
-new SlashCommandBuilder().setName('slowmode').setDescription('Set slowmode') .addIntegerOption(o => o.setName('seconds').setDescription('Seconds').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
-
-new SlashCommandBuilder().setName('lock').setDescription('Lock current channel') .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
-
-new SlashCommandBuilder().setName('unlock').setDescription('Unlock current channel') .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
-
-new SlashCommandBuilder().setName('announce').setDescription('Make announcement') .addStringOption(o => o.setName('message').setDescription('Message').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-
-new SlashCommandBuilder().setName('nickname').setDescription('Change nickname') .addUserOption(o => o.setName('user').setDescription('User').setRequired(true)) .addStringOption(o => o.setName('nickname').setDescription('New nickname').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames),
-
-new SlashCommandBuilder().setName('purge').setDescription('Delete all messages') .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-
-new SlashCommandBuilder().setName('role').setDescription('Info on a role') .addRoleOption(o => o.setName('role').setDescription('Target role').setRequired(true)),
-
-new SlashCommandBuilder().setName('addrole').setDescription('Add role to user') .addUserOption(o => o.setName('user').setDescription('Target').setRequired(true)) .addRoleOption(o => o.setName('role').setDescription('Role').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
-
-new SlashCommandBuilder().setName('removerole').setDescription('Remove role from user') .addUserOption(o => o.setName('user').setDescription('Target').setRequired(true)) .addRoleOption(o => o.setName('role').setDescription('Role').setRequired(true)) .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
-
-new SlashCommandBuilder().setName('quote').setDescription('Send a random quote'),
-
-new SlashCommandBuilder().setName('flip').setDescription('Flip a coin'),
-
-new SlashCommandBuilder().setName('uptime').setDescription('Check bot uptime'),
-
-new SlashCommandBuilder().setName('status').setDescription('Bot status'),
-
-new SlashCommandBuilder().setName('suggest').setDescription('Send a suggestion') .addStringOption(o => o.setName('text').setDescription('Your suggestion').setRequired(true)),
-
-new SlashCommandBuilder().setName('report').setDescription('Report a user') .addUserOption(o => o.setName('user').setDescription('Who?').setRequired(true)) .addStringOption(o => o.setName('reason').setDescription('Why?').setRequired(true)),
-
-new SlashCommandBuilder().setName('snipe').setDescription('Get last deleted message'),
-
-new SlashCommandBuilder().setName('botinfo').setDescription('Bot details'),
-
-new SlashCommandBuilder().setName('invite').setDescription('Bot invite link'),
-
-new SlashCommandBuilder().setName('afk').setDescription('Set AFK status') .addStringOption(o => o.setName('reason').setDescription('AFK Reason')) ];
-
-module.exports = commands;
-
+// Export everything
+module.exports = {
+  commands: commands.map(command => command.toJSON()),
+  logger,
+  warnedUsers,
+  snipedMessages,
+  afkUsers,
+  isMod
+};
