@@ -1,4 +1,6 @@
-// index.js const { Client, GatewayIntentBits, Partials, REST, Routes, Collection, PermissionsBitField } = require('discord.js'); const fs = require('fs'); const express = require('express'); const app = express(); const PORT = process.env.PORT || 3000;
+// index.js
+
+const { Client, GatewayIntentBits, Partials, REST, Routes, Collection, PermissionsBitField } = require('discord.js'); const fs = require('fs'); const express = require('express'); const app = express(); const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => res.send('Zex is live!')); app.listen(PORT, () => console.log(🌐 Fake server listening on port ${PORT}));
 
