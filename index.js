@@ -18,7 +18,9 @@ const command = client.commands.get(interaction.commandName);
 
 if (!command) return;
 
-// Server-only and mod-only checks const modOnly = ['say', 'purge']; if (modOnly.includes(command.data.name)) { if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) { return interaction.reply({ content: '❌ You need Manage Messages permission to use this command.', ephemeral: true }); } }
+// Server-only and mod-only checks
+
+ const modOnly = ['say', 'purge']; if (modOnly.includes(command.data.name)) { if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) { return interaction.reply({ content: '❌ You need Manage Messages permission to use this command.', ephemeral: true }); } }
 
 try { await command.execute(interaction); } catch (error) { console.error(error); if (interaction.replied || interaction.deferred) { await interaction.followUp({ content: '❌ There was an error while executing this command!', ephemeral: true }); } else { await interaction.reply({ content: '❌ There was an error while executing this command!', ephemeral: true }); } } });
 
